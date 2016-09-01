@@ -1,0 +1,33 @@
+{
+  "name": "vaani.assistant",
+  "version": "0.0.1",
+  "description": "The vaani voice assistant",
+  "main": "app.js",
+  "scripts": {
+    "test": "test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mozilla/vaani.assistant.git"
+  },
+  "keywords": [
+    "vaani",
+    "voice",
+    "tts",
+    "stt",
+    "assistant",
+    "skill",
+    "command",
+    "speech",
+    "node",
+    "js",
+    "pocketsphinx",
+    "interactive"
+  ],
+  "author": "Tilman Kamp",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/mozilla/vaani.assistant/issues"
+  },
+  "homepage": "https://github.com/mozilla/vaani.assistant#readme"
+}
