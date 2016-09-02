@@ -10,6 +10,28 @@ const fs = require('fs');
 const Wakeword = require('./wakeword');
 const MemoryStream = require('memorystream');
 const child_process = require('child_process');
+const stt = require('./lib/stt');
+const watson = require('watson-developer-cloud');
+const shortid = require('shortid');
+const path = require('path');
+const stream = require('stream');
+
+
+const sorryUnderstand = 'Sorry, but I did not quite understand.';
+const sorryTooLong = 'Sorry, but this was a bit too long for me.';
+const sorryService = 'Sorry, the service is not available at the moment.';
+const unknown = '<unknown>';
+
+const OK = 0;
+const ERROR_PARSING = 1;
+const ERROR_EXECUTING = 2;
+const ERROR_STT = 100;
+
+const logdir = './log/';
+
+if (!fs.existsSync(logdir)){
+    fs.mkdirSync(logdir);
+}
 
 const loadConfig = config => {
 
@@ -76,7 +98,13 @@ const run = config => {
         end_sound_played,
         lastvadStatus,
         dtStartSilence,
-        totalSilencetime;
+        totalSilencetime,
+        logfile,
+        rawlog,
+        audio;
+
+    const speech_to_text = stt.speech_to_text(config.stt);
+    const text_to_speech = watson.text_to_speech(config.tts.watson);
 
     const shelloutAsync = (command, params) =>
         child_process.spawn(command, params.split(' '));
@@ -194,17 +222,70 @@ const run = config => {
         }
     };
 
+    const writeToSinks = data => {
+        audio.write(data);
+        rawlog.write(data);
+    };
+
+    const closeSinks = () => {
+        if(streamvad) { streamvad.end(); streamvad = null; }
+        if(audio)     { audio.end();     audio = null; }
+        if(rawlog)    { rawlog.end();    rawlog = null; }
+    };
+
     const resetlisten = () => {
-        if (streamvad){
-            streamvad.end();
-            streamvad = null;
-        }
+        closeSinks();
         Wakeword.resume();
         Wakeword.pause();
         abort = true;
     };
 
+    const fail = (message) => {
+        closeSinks();
+        config.log('failed - ' + message);
+    };
+
+    const answer = (status, message, command, confidence) => {
+        config.log('sending answer - ' + status + ' - ' + message);
+        try {
+            fs.writeFile(
+                logfile + '.json',
+                JSON.stringify({
+                    status: status,
+                    message: message,
+                    command: command,
+                    confidence: confidence || 1
+                }),
+                err => err && config.log("problem logging json - " + err)
+            );
+
+            var player = shelloutAsync('play', '-t wav -'),
+                voice = text_to_speech.synthesize({
+                    text: [
+                        '<express-as type="',
+                            (status > 0 ? 'Apology' : ''),
+                        '">',
+                        message,
+                        '</express-as>'
+                    ].join(''),
+                    voice: 'en-US_AllisonVoice',
+                    accept: 'audio/wav'
+                }, err => err && fail('problem with TTS service - ' + err));
+            voice.on('data', data => player.stdin.write(data));
+            voice.on('end', () => player.stdin.end());
+        } catch(ex) {
+            fail('answering - ' + JSON.stringify(ex));
+        }
+    };
+
+    const interpret = (command, confidence) => {
+        answer(OK, 'Santa says: ' + command, command, confidence);
+    };
+
     const spotted = (data, word) => {
+
+        console.log('SPOTTED!!!!!!!!!!!');
+
         let samples;
 
         if (!streamvad) {
@@ -212,20 +293,35 @@ const run = config => {
             streamvad = new MemoryStream();
             wakeTime = Date.now();
             abort = false;
+
+            logfile = path.join(logdir, shortid.generate());
+            rawlog = fs.createWriteStream(logfile + '.raw');
+            audio = new stream.PassThrough();
+            rawlog.on('error', err => config.log('problem logging audio - ' + err));
+            audio.on('error', err => config.log('problem passing audio - ' + err));
+            speech_to_text.recognize({ audio: audio }, (err, res) => {
+                if(err) {
+                    config.log('problem STT - ' + err);
+                    answer(ERROR_STT, sorryService, unknown, 0);
+                } else
+                    interpret(res.transcript, res.confidence);
+                resetlisten();
+                Wakeword.resume();
+            });
         }
 
         streamvad.write(data);
 
         while ((samples = streamvad.read(config.VAD_BYTES))) {
             secsSilence = vad(samples);
+            writeToSinks(samples);
             //servertools.streamToServer(samples);
         }
 
-        if ((Date.now() - wakeTime > config.MAX_LISTEN_TIME) || (secsSilence >=  config.MAX_SIL_TIME) || abort) {
+        if ((Date.now() - wakeTime > config.MAX_LISTEN_TIME) || (secsSilence >= config.MAX_SIL_TIME) || abort) {
             endsound();
             resetlisten();
             config.metric("userspeech", "end", "ok", 1);
-            playresponse();
         }
     };
 

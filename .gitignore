@@ -1,12 +1,14 @@
 # Logs
-logs
+log
 *.log
 npm-debug.log*
 /output.wav
 /wakewords.txt
 
 # Configs
-/*.config
+/config.json
+/secret.json
+/.google.json
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
 build/Release

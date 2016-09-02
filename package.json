@@ -41,9 +41,16 @@
     "concat-stream": "1.5.1",
     "mic": "2.0.1",
     "pocketsphinx": "5.0.5",
+    "path": "^0.12.7",
+    "stream": "^0.0.2",
     "which": "1.2.9",
     "getmac": "1.2.1",
     "nascent-ledbar": "https://github.com/mozilla/nascent-ledbar",
-    "commander": "2.9.0"
+    "commander": "2.9.0",
+    "google-auto-auth": "^0.2.4",
+    "google-proto-files": "^0.4.0",
+    "grpc": "^0.15.0",
+    "watson-developer-cloud": "^1.12.4",
+    "shortid": "^2.2.6"
   }
 }
