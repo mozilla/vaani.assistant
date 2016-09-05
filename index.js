@@ -14,6 +14,7 @@ const MemoryStream = require('memorystream');
 const child_process = require('child_process');
 const watson = require('watson-developer-cloud');
 const stt = require('./lib/stt');
+const tts = require('./lib/tts');
 const Wakeword = require('./lib/wakeword');
 
 const sorryUnderstand = 'Sorry, but I did not quite understand.';
@@ -28,7 +29,7 @@ const ERROR_STT = 100;
 
 const logdir = './log/';
 
-if (!fs.existsSync(logdir)){
+if (!fs.existsSync(logdir)) {
     fs.mkdirSync(logdir);
 }
 
@@ -103,7 +104,7 @@ const run = config => {
         audio;
 
     const speech_to_text = stt.speech_to_text(config.stt);
-    const text_to_speech = watson.text_to_speech(config.tts.watson);
+    const text_to_speech = tts.text_to_speech(config.tts);
 
     const shelloutAsync = (command, params) =>
         child_process.spawn(command, params.split(' '));
