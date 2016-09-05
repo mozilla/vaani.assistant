@@ -7,15 +7,14 @@
 (function(){
 
 const fs = require('fs');
-const Wakeword = require('./wakeword');
-const MemoryStream = require('memorystream');
-const child_process = require('child_process');
-const stt = require('./lib/stt');
-const watson = require('watson-developer-cloud');
-const shortid = require('shortid');
 const path = require('path');
 const stream = require('stream');
-
+const shortid = require('shortid');
+const MemoryStream = require('memorystream');
+const child_process = require('child_process');
+const watson = require('watson-developer-cloud');
+const stt = require('./lib/stt');
+const Wakeword = require('./lib/wakeword');
 
 const sorryUnderstand = 'Sorry, but I did not quite understand.';
 const sorryTooLong = 'Sorry, but this was a bit too long for me.';
@@ -214,7 +213,7 @@ const run = config => {
 
         // Now do the multiplication, clipping values rather than
         // wrapping around.
-        for(var i = 0; i < samples.length; i++) {
+        for (var i = 0; i < samples.length; i++) {
             var s = samples[i];
             s = Math.round(s * factor);
             if (s > 32767) s = 32767; else if (s < -32768) s = -32768;
@@ -228,9 +227,9 @@ const run = config => {
     };
 
     const closeSinks = () => {
-        if(streamvad) { streamvad.end(); streamvad = null; }
-        if(audio)     { audio.end();     audio = null; }
-        if(rawlog)    { rawlog.end();    rawlog = null; }
+        if (streamvad) { streamvad.end(); streamvad = null; }
+        if (audio)     { audio.end();     audio = null; }
+        if (rawlog)    { rawlog.end();    rawlog = null; }
     };
 
     const resetlisten = () => {
